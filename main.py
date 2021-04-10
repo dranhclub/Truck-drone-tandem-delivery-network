@@ -3,21 +3,21 @@ import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
 
 INFINITY = 999999999
-
+np.random.seed(0)
 # P = []  # Set of customer delivery locations
 # k_up = len(P)  # Total number of customers or size of P
 # dr = 2  # Number of drones per truck
 
 # Generate delivery locations
-n = 200
+n = 250
 xy_min = [0, 0]
 xy_max = [10, 20]
 P = np.random.uniform(low=xy_min, high=xy_max, size=(n, 2))
 
 
 # Show P
-# plt.scatter(P[:, 0], P[:, 1])
-# plt.show()
+plt.scatter(P[:, 0], P[:, 1])
+plt.show()
 
 
 def optimize(P):
@@ -56,64 +56,87 @@ def kmeans(k, P):
     return C, L, D
 
 
-def genetic(k, C):
-    n = k
+def genetic(C):
+    n = len(C)
 
     # Output
     optimal_route = []
     global_min_dist = None
 
     # Initialize
-    p = 200  # Population size
-    POP = np.repeat(np.arange(k).reshape(1,-1), p, axis=0)
+    pop_size = 200  # Population size
+    POP = np.empty((pop_size, n), dtype=np.uint8)
+    for i in range(pop_size):
+        POP[i] = np.random.permutation(n)
     DIST = cdist(C, C)
     global_min_dist = INFINITY
-    max_iter = 25 * n ** 9
 
-    def path_dist(path):
-        dist = 0
-        for i in range(path):
-            a = path[i-1]
-            b = path[i]
-            dist += DIST[a][b]
-        return dist
-
+    # Loop
+    max_iter = 25 * n
+    print("max_iter=", max_iter)
+    min_dist_by_iter = np.zeros(max_iter)  # save min_dist for plotting
     for iter in range(max_iter):
-        # Find min distance route in population
-        route_dist = path_dist(POP)
-        min_route_idx = np.min(route_dist)
+        if iter % 200 == 0: print("iter=", iter)
+        # Calculate total distance of routes
+        route_dist = np.zeros(pop_size, dtype=np.float64)
+        for i in range(pop_size):
+            route_dist[i] = 0
+            route = POP[i]
+            for j, _ in enumerate(route):
+                a = route[j - 1]
+                b = route[j]
+                route_dist[i] += DIST[a][b]
+
+        # Find best route in population
+        min_route_idx = np.argmin(route_dist)
         min_dist = route_dist[min_route_idx]
+        min_dist_by_iter[iter] = min_dist  # save min_dist for plotting
         if min_dist < global_min_dist:
             # Capture minimum distance and best route
             global_min_dist = min_dist
             optimal_route = POP[min_route_idx]
 
-        # Randomly select 5 routes from population
-        POP5 = POP[np.random.choice(p, 5, replace=False)]
+        # Genetic algorithm operators
+        random_order = np.random.permutation(pop_size)
+        new_pop = np.empty((pop_size, n), dtype=np.uint8)
+        for p in range(3, pop_size, 4):
+            routes = POP[random_order[p - 3:p + 1], :]
+            dists = route_dist[random_order[p - 3:p + 1]]
+            min_dist_idx = np.argmin(dists)
+            min_route = routes[min_dist_idx]
+            (a, b) = sorted(np.random.choice(n, 2, replace=False))
+            tmp_pop = np.empty((4, n), dtype=np.uint8)
+            for k in range(4):
+                tmp_pop[k] = min_route
+                if k == 1:  # Flip
+                    tmp = tmp_pop[k, a:b + 1]
+                    tmp_pop[k, a:b + 1] = tmp[::-1]
+                elif k == 2:  # Swap
+                    tmp_pop[k, [a, b]] = tmp_pop[k, [b, a]]
+                elif k == 3:  # Slide
+                    ida = [m for m in range(a + 1, b + 1)] + [a]
+                    tmp_pop[k, a:b + 1] = tmp_pop[k, ida]
+                else:  # Do Nothing
+                    pass
+            new_pop[p - 3:p + 1] = tmp_pop
 
-        # Find min distance of the 5 routes
-        route_dist = path_dist(POP5)
-        min_route_idx = np.min(route_dist)
-        min_dist = route_dist[min_route_idx]
+        POP = new_pop
 
-        # Random shuffle 0:n-1 integers
-        r_shuffle = np.random.permutation(n)
-        rand1, rand2 = sorted(r_shuffle[1:2])
-        rand2, rand3 = sorted(r_shuffle[2:3])
-        for k in range(1, 5+1):
-            pass
+    plt.plot(min_dist_by_iter)
+    plt.show()
+    return optimal_route, global_min_dist
 
 
-C, L, D = kmeans(5, P)
+C, L, D = kmeans(50, P)
 
 print("Centroids:", C)
 print("Labels:", L)
 
 
 def plot_kmeans(C, L):
-    # import matplotlib.colors as colors
-    # colors_list = list(colors._colors_full_map.values())
-    colors = ['#f54242', '#0cb000', '#0029b0', '#b0009e', '#b0ad00']
+    import matplotlib.colors as colors
+    colors = list(colors._colors_full_map.values())
+    # colors = ['#f54242', '#0cb000', '#0029b0', '#b0009e', '#b0ad00']
 
     for i in range(len(C)):
         Pi = P[L == i]
@@ -124,3 +147,8 @@ def plot_kmeans(C, L):
 
 
 plot_kmeans(C, L)
+
+
+optimal_route, optimal_dist = genetic(C)
+print("Optimal route:", optimal_route)
+print("Optimal dist", optimal_dist)
