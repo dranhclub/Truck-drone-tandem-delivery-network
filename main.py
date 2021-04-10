@@ -1,31 +1,108 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import cdist
+from math import ceil
 
 INFINITY = 999999999
 np.random.seed(0)
-# P = []  # Set of customer delivery locations
-# k_up = len(P)  # Total number of customers or size of P
-# dr = 2  # Number of drones per truck
 
 # Generate delivery locations
-n = 250
+n = 50
 xy_min = [0, 0]
-xy_max = [10, 20]
-P = np.random.uniform(low=xy_min, high=xy_max, size=(n, 2))
+xy_max = [30, 30]
 
 
-# Show P
-plt.scatter(P[:, 0], P[:, 1])
-plt.show()
+# P = np.random.uniform(low=xy_min, high=xy_max, size=(n, 2))
+
+
+# Generate delivery locations by cluster
+def gen_by_cluster(num_cluster):
+    centroids = np.random.uniform(low=xy_min, high=xy_max, size=(num_cluster, 2))
+    cov = [[1, 0], [0, 1]]
+    X = []
+    n2 = n
+    k = n // num_cluster
+    for centroid in centroids:
+        if (n2 > k):
+            X.append(np.random.multivariate_normal(centroid, cov, k))
+            n2 -= k
+        else:
+            X.append(np.random.multivariate_normal(centroid, cov, n2))
+    return np.concatenate(X)
 
 
 def optimize(P):
-    pass
+    k_up = len(P)  # Total number of customers or size of P
+    dr = 4  # Number of drones per truck
+
+    # Initialize
+    max_iter = 100
+    best_time = INFINITY
+    optimal_k = k_up
+    Ts = 35
+    Ds = Ts * 1.5
+    k_low = 2
+    K = np.empty(max_iter, dtype=np.int8)
+    K[0] = int(ceil(k_up / 5))
+    J = np.zeros(max_iter, dtype=np.float64)
+    J[0] = cost(K[0], P, Ts, Ds, dr)
+    alpha = 10
+    g = 1
+
+    # Loop
+    for i in range(max_iter):
+        K[i + 1] = K[i] - alpha * g
+        J[i + 1] = cost(K[i + 1], P, Ts, Ds, dr)
+        # print("K[%d]=%d" % (i+1, K[i+1]))
+        # print("J[%d]=%d" % (i+1, J[i+1]))
+        dJ = J[i + 1] - J[i]
+        dK = K[i + 1] - K[i]
+        if dK == 0:
+            break
+        g = dJ / dK
+
+        # Capture best time and optimal k
+        if J[i + 1] < best_time:
+            best_time = J[i + 1]
+            optimal_k = K[i + 1]
+
+    print("J=", J)
+    print("J shape=", J.shape)
+    plt.plot(J)
+    plt.show()
+    return best_time, optimal_k
+
+
+def try_k(P):
+    dr = 4  # Number of drones per truck
+
+    # Initialize
+    max_iter = n // 2
+    Ts = 35
+    Ds = Ts * 1.5
+    K = np.empty(max_iter, dtype=np.int8)
+    J = np.zeros(max_iter, dtype=np.float64)
+    for k in range(2, max_iter):
+        J[k] = cost(k, P, Ts, Ds, dr)
+
+    print("J=", J)
+    print("J shape=", J.shape)
+    plt.xlabel("K")
+    plt.ylabel("cost")
+    plt.plot(list(range(2,max_iter)), J[2:max_iter])
+    plt.show()
 
 
 def cost(K, P, Ts, Ds, dr):
-    pass
+    max_iter = 1
+    sum_total_time = 0
+    for i in range(max_iter):
+        C, L, D = kmeans(K, P)
+        sum_D = 2 * np.sum(D)
+        route, route_dist = genetic(C)
+        sum_total_time += route_dist / Ts + (1 / dr) * sum_D / Ds
+    total_time_avg = sum_total_time / max_iter
+    return total_time_avg
 
 
 def kmeans(k, P):
@@ -122,15 +199,12 @@ def genetic(C):
 
         POP = new_pop
 
-    plt.plot(min_dist_by_iter)
-    plt.show()
+    # plt.plot(min_dist_by_iter)
+    # plt.title("Num cluster k=" + str(n))
+    # plt.xlabel("Iteration")
+    # plt.ylabel("Min distance")
+    # plt.show()
     return optimal_route, global_min_dist
-
-
-C, L, D = kmeans(50, P)
-
-print("Centroids:", C)
-print("Labels:", L)
 
 
 def plot_kmeans(C, L):
@@ -143,12 +217,34 @@ def plot_kmeans(C, L):
         plt.plot(Pi[:, 0], Pi[:, 1], 'o', color=colors[i], markersize=4, alpha=0.5)
 
     plt.plot(C[:, 0], C[:, 1], 'ro', markersize=8, alpha=0.8)
+    plt.title("Kmeans clustering")
     plt.show()
 
 
-plot_kmeans(C, L)
+def test_kmeans(P):
+    C, L, D = kmeans(20, P)
+    plot_kmeans(C, L)
 
 
-optimal_route, optimal_dist = genetic(C)
-print("Optimal route:", optimal_route)
-print("Optimal dist", optimal_dist)
+def test_genetic(P):
+    C, L, D = kmeans(20, P)
+    plot_kmeans(C, L)
+    optimal_route, optimal_dist = genetic(C)
+    print("Optimal route:", optimal_route)
+    print("Optimal dist", optimal_dist)
+
+
+P = gen_by_cluster(3)
+
+# Show P
+plt.scatter(P[:, 0], P[:, 1])
+plt.show()
+
+# best_time, optimal_k = optimize(P)
+# print("Best time:", best_time)
+# print("Optimal k:", optimal_k)
+
+# test_genetic(P)
+
+try_k(P)
+
