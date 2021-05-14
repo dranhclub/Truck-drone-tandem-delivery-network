@@ -24,7 +24,7 @@ numloop = 400
 rate_of_mutate = 0.5
 
 # Initialize population
-pop = np.empty((n_pop, N), dtype=np.int8)
+pop = np.empty((n_pop, N), dtype=np.int32)
 
 for i in range(n_pop):
     pop[i] = np.random.permutation(N)
@@ -100,7 +100,7 @@ if __name__ == "__main__":
 
     for t in range(numloop):
         # Crossover + mutate
-        temp_pop = np.empty((2 * n_pop, N), dtype=np.int8)
+        temp_pop = np.empty((2 * n_pop, N), dtype=np.int32)
         temp_pop[:n_pop] = pop
         for i in range(n_pop, 2 * n_pop, 2):
             p1 = pop[np.random.randint(0, n_pop)]
