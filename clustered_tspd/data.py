@@ -1,8 +1,9 @@
 import matplotlib.pyplot as plt
 import numpy as np
 from scipy.spatial.distance import cdist
+import math
 
-np.random.seed(2)
+# np.random.seed(2)
 
 
 def generate_points_with_min_distance(n, shape, min_dist):
@@ -29,29 +30,28 @@ def generate_points_with_min_distance(n, shape, min_dist):
     return coords
 
 
-def generate():
-    # np.random.seed(1)
+def generate(aprxmt_num_cluster, aprxmt_num_point_per_cluster):
     # Generate clustered points
-    def gen_by_cluster(aprxmt_num_cluster, aprxmt_num_point_per_cluster):
-        xy_min = [0, 0]
-        xy_max = [150, 150]
-        # centroids = np.random.uniform(low=xy_min, high=xy_max, size=(num_cluster, 2))
-        centroids = generate_points_with_min_distance(n=aprxmt_num_cluster, shape=(150, 150), min_dist=10)
-        num_cluster = len(centroids)
-        cov = [[7, 0], [0, 7]]
-        X = []
-        rand_size = np.random.randint(int(0.7 * aprxmt_num_point_per_cluster), int(1.3 * aprxmt_num_point_per_cluster),
-                                      num_cluster)
-        for i in range(num_cluster):
-            for point in np.random.multivariate_normal(centroids[i], cov, rand_size[i]):
-                x, y = point
-                X.append((i, x, y))
+    width = 100
+    height = 100
+    ratio = 0.07  # distance of points in 1 cluster / distance of clusters
+    min_dist = 20  # min distance of 2 clusters
+    centroids = generate_points_with_min_distance(n=aprxmt_num_cluster, shape=(width, height), min_dist=min_dist)
+    num_cluster = len(centroids)
+    cov = [[width * ratio, 0], [0, height * ratio]]
+    points = []
+    for i in range(num_cluster):
+        low = int(0.7 * aprxmt_num_point_per_cluster)
+        high = int(1.3 * aprxmt_num_point_per_cluster)
+        num_point = np.random.randint(low, high)
+        random_points = np.random.multivariate_normal(centroids[i], cov, num_point)
+        for point in random_points:
+            x, y = point
+            points.append((i, x, y))
 
-        X = np.array(X, dtype='i4, f4, f4')
-        return X, centroids
+    points = np.array(points, dtype='i4, f4, f4')
 
-    # Generate edges
-    points, centroids = gen_by_cluster(7, 7)
+    # Generate edges between clusters
     edges = []
     for i in range(len(centroids)):
         centr = centroids[i]
@@ -62,10 +62,26 @@ def generate():
             dist = (centr[0] - other[0]) ** 2 + (centr[1] - other[1]) ** 2
             dists.append(dist)
         argsorted = np.argsort(np.array(dists))
-        n = np.random.randint(0, len(others))
-        for j in range(n):
-            edges.append([i, others[argsorted[j]]])
+        k = np.random.randint(2, len(others)) # k nearest neighbors
+        edges_of_cluster = []
+        for j in range(k):
+            new_edge = [i, others[argsorted[j]]]
+            check_angle = True
+            for old_edge in edges_of_cluster:
+                # Calc angle between old and new edge
+                C = np.array(centroids[i])
+                A = np.array(centroids[old_edge[1]])
+                B = np.array(centroids[new_edge[1]])
+                v1 = A - C
+                v2 = B - C
+                angle = math.acos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
+                if angle / math.pi * 180 < 20:
+                    check_angle = False
+            if check_angle:
+                edges_of_cluster.append(new_edge)
+        edges += edges_of_cluster
 
+    # Generate edge between points of clusters
     edges = np.sort(edges)
     used = []
     cluster_edge = []
@@ -88,7 +104,7 @@ def generate():
         p_of_c1 = np.array(p_of_c1)
         p_of_c2 = np.array(p_of_c2)
         r = np.random.rand()
-        n = 0 if r < 0.05 else 1 if r < 0.95 else 2
+        n = 0 if r < 0.05 else 1 if r < 0.9 else 2
         n = min(n, len(p_of_c1) * len(p_of_c2))  # in case 2 cluster has too few points
         dists = cdist(p_of_c1, p_of_c2)
         indices = np.argsort(dists.ravel())[:n]
@@ -149,8 +165,9 @@ def show(points, cluster_edges):
         plt.scatter(p[1], p[2], color='black')
     plt.show()
 
+
 # show(*readfile("mydata.txt"))
 
 
-# show(*generate())
+show(*generate(15, 7))
 # save_to_file(*generate(), 'mydata.txt')
