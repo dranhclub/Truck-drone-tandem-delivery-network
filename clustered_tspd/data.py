@@ -74,7 +74,9 @@ def generate(aprxmt_num_cluster, aprxmt_num_point_per_cluster):
                 B = np.array(centroids[new_edge[1]])
                 v1 = A - C
                 v2 = B - C
-                angle = math.acos(np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2)))
+                cosin = np.dot(v1, v2) / (np.linalg.norm(v1) * np.linalg.norm(v2))
+                cosin = min(1, cosin)
+                angle = math.acos(cosin)
                 if angle / math.pi * 180 < 20:
                     check_angle = False
             if check_angle:
@@ -169,5 +171,5 @@ def show(points, cluster_edges):
 # show(*readfile("mydata.txt"))
 
 
-show(*generate(15, 7))
-# save_to_file(*generate(), 'mydata.txt')
+# show(*generate(6, 7))
+# save_to_file(*generate(6, 7), 'mydata_9_7.txt')
