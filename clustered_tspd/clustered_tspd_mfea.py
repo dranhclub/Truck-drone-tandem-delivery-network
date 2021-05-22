@@ -66,12 +66,12 @@ def generate_cluster_route_using_dfs(clusters, prefer_num_route):
     for route in routes:
         edge_list = []
         for i in range(len(route)):
-            c1 = route[i]
-            c2 = route[i+1 if i < len(route) - 1 else 0]
+            cluster_1 = route[i]
+            cluster_2 = route[i + 1 if i < len(route) - 1 else 0]
 
             def match_edge():
-                for edge1 in c1.edges:
-                    for edge2 in c2.edges:
+                for edge1 in cluster_1.edges:
+                    for edge2 in cluster_2.edges:
                         if edge1 == edge2:
                             edge_list.append(edge1)
                             return
@@ -79,55 +79,6 @@ def generate_cluster_route_using_dfs(clusters, prefer_num_route):
             match_edge()
         edge_lists.append([edge for edge in edge_list])
     return edge_lists
-
-
-def generate_cluster_route(clusters, edges):
-    num_cluster = len(clusters)
-    tour = np.random.permutation(num_cluster - 1)
-    tour = np.concatenate((tour, [num_cluster - 1]))
-
-    def is_connected(cluster1, cluster2):
-        cluster1 = clusters[cluster1]
-        cluster2 = clusters[cluster2]
-        for edge in cluster1.edges:
-            if edge.p1.c == cluster2.idx or edge.p2.c == cluster2.idx:
-                return True
-
-    def is_valid(tour):
-        for i in range(len(tour) - 1):
-            if not is_connected(tour[i], tour[i + 1]):
-                return False
-        if not is_connected(tour[len(tour) - 1], tour[0]):
-            return False
-        return True
-
-    count = 0
-    while not is_valid(tour):
-        tour = np.random.permutation(num_cluster - 1)
-        tour = np.concatenate((tour, [num_cluster - 1]))
-        count += 1
-        if count > 100000:
-            raise Exception("Cannot generate valid tour")
-    route = []
-    for i in range(len(tour) - 1):
-        cluster1 = clusters[tour[i]]
-        cluster2 = clusters[tour[i + 1]]
-        for edge in random.sample(cluster1.edges, len(cluster1.edges)):
-            if edge.p1.c == cluster2.idx or edge.p2.c == cluster2.idx:
-                route.append(edge)
-                break
-        else:
-            raise Exception("Error")
-    cluster1 = clusters[tour[len(tour) - 1]]
-    cluster2 = clusters[tour[0]]
-    for edge in random.sample(cluster1.edges, len(cluster1.edges)):
-        if edge.p1.c == cluster2.idx or edge.p2.c == cluster2.idx:
-            route.append(edge)
-            break
-    else:
-        raise Exception("Error")
-
-    return route
 
 
 def display_route(points, edges, route: List[Edge]):
@@ -156,9 +107,27 @@ def mutate_cluster_route(edges, cr):
     return cr
 
 
-def crossover_cluster_route(clusters, cr1, cr2):
-    union = list(set(cr1) | set(cr2))
-    return generate_cluster_route(clusters, union), generate_cluster_route(clusters, union)
+def crossover_cluster_route(clusters, cr1: List[Edge], cr2: List[Edge]):
+    union_edges = list(set(cr1) | set(cr2))
+    temp_clusters = [Cluster(i) for i in range(len(clusters))]
+    union_points = set()
+    for edge in union_edges:
+        union_points.add(edge.p1)
+        union_points.add(edge.p2)
+    union_points = list(union_points)
+    for point in union_points:
+        if point not in temp_clusters[point.c].points:
+            temp_clusters[point.c].points.append(point)
+    for edge in union_edges:
+        c1 = edge.p1.c
+        c2 = edge.p2.c
+        temp_clusters[c1].edges.append(edge)
+        temp_clusters[c2].edges.append(edge)
+        if temp_clusters[c1] not in temp_clusters[c2].neighbors:
+            temp_clusters[c2].neighbors.append(temp_clusters[c1])
+        if temp_clusters[c2] not in temp_clusters[c1].neighbors:
+            temp_clusters[c1].neighbors.append(temp_clusters[c2])
+    return generate_cluster_route_using_dfs(temp_clusters, 1)[0], generate_cluster_route_using_dfs(temp_clusters, 1)[0]
 
 
 def dist(x1, y1, x2, y2):
@@ -175,9 +144,9 @@ def best_cost(cr):
 
 if __name__ == '__main__':
     # points, edges, clusters = prepare_data("mydata_9_7.txt")
-    points, edges, clusters = prepare_data(None, gen=(9, 7))
-    cr_pop_num = 20
-    cr_rmp = 0.0  # Random mating probability
+    points, edges, clusters = prepare_data(None, gen=(14, 7))
+    cr_pop_num = 100
+    cr_rmp = 0.5  # Random mating probability
     main_loop_num = 20
     sub_loop_num = 20
 

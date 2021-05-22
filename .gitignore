@@ -4,3 +4,4 @@ docs/Untitled.png
 docs/Untitled2.png
 test.py
 clustered_tspd/__pycache__/data.cpython-38.pyc
+*.pyc

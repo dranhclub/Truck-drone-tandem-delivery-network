@@ -3,7 +3,7 @@ import numpy as np
 from scipy.spatial.distance import cdist
 import math
 
-# np.random.seed(2)
+np.random.seed(2)
 
 
 def generate_points_with_min_distance(n, shape, min_dist):
