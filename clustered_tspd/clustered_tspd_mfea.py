@@ -9,7 +9,7 @@ import random
 from point import Point
 from edge import Edge
 from cluster import Cluster
-
+from mfea import best_cost
 
 def prepare_data(filename, gen=None):
     if gen:
@@ -130,18 +130,6 @@ def crossover_cluster_route(clusters, cr1: List[Edge], cr2: List[Edge]):
     return generate_cluster_route_using_dfs(temp_clusters, 1)[0], generate_cluster_route_using_dfs(temp_clusters, 1)[0]
 
 
-def dist(x1, y1, x2, y2):
-    return sqrt((x1 - x2) ** 2 + (y1 - y2) ** 2)
-
-
-def best_cost(cr):
-    # TODO: use MFEA to solve
-    sum_cost = 0
-    for edge in cr:
-        sum_cost += dist(edge.p1.x, edge.p1.y, edge.p2.x, edge.p2.y)
-    return sum_cost
-
-
 if __name__ == '__main__':
     # points, edges, clusters = prepare_data("mydata_9_7.txt")
     points, edges, clusters = prepare_data(None, gen=(14, 7))
@@ -185,7 +173,7 @@ if __name__ == '__main__':
         # Evaluate every cluster route in cr_intermediate_pop (1)
         cr_cost_table = np.empty(len(cr_intermediate_pop))
         for i, cr in enumerate(cr_intermediate_pop):
-            cr_cost_table[i] = best_cost(cr)
+            cr_cost_table[i] = best_cost(clusters, cr)
 
         # cr_pop = top best cluster route in cr_intermediate_pop
         rank = np.argsort(cr_cost_table)
@@ -194,11 +182,11 @@ if __name__ == '__main__':
             new_pop.append(cr_intermediate_pop[i])
         cr_pop = new_pop
 
-        history.append(best_cost(cr_pop[0]))
+        history.append(best_cost(clusters, cr_pop[0]))
     # Show result
     for cr in cr_pop:
         print(cr)
-        print(best_cost(cr))
+        print(best_cost(clusters, cr))
     display_route(points, edges, cr_pop[0])
     plt.plot(history)
     plt.show()
