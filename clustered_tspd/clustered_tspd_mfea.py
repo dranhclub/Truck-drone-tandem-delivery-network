@@ -132,8 +132,8 @@ def crossover_cluster_route(clusters, cr1: List[Edge], cr2: List[Edge]):
 
 if __name__ == '__main__':
     # points, edges, clusters = prepare_data("mydata_9_7.txt")
-    points, edges, clusters = prepare_data(None, gen=(14, 7))
-    cr_pop_num = 100
+    points, edges, clusters = prepare_data(None, gen=(9, 7))
+    cr_pop_num = 10
     cr_rmp = 0.5  # Random mating probability
     main_loop_num = 20
     sub_loop_num = 20
@@ -143,13 +143,15 @@ if __name__ == '__main__':
     cr_pop = []  # cluster route pop
     for i in range(cr_pop_num):
         route = generate_cluster_route_using_dfs(clusters, 1)[0]
-        print(route)
+        print(f"Random generate [{i}/{cr_pop_num}] route with length {len(clusters)}: {route}")
         cr_pop.append(route)
         # display_route(points, edges, route)
 
     # Main loop
     history = []
-    for _ in range(main_loop_num):
+    print("Running main loop")
+    for loop_iter in range(main_loop_num):
+        print(f"Main loop [{loop_iter}/{main_loop_num}]")
         # Apply GA operator on cr_pop to get cr_offspr_pop
         cr_offspr_pop = []
         count = 0
@@ -189,6 +191,9 @@ if __name__ == '__main__':
         print(best_cost(clusters, cr))
     display_route(points, edges, cr_pop[0])
     plt.plot(history)
+    plt.title("Convergence chart")
+    plt.xlabel("Iteration")
+    plt.ylabel("Best cost")
     plt.show()
     print(cr_pop[0])
     print(mutate_cluster_route(edges, cr_pop[0]))

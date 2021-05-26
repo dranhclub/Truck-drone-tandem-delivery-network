@@ -157,6 +157,7 @@ class MFEA:
         # Main loop
         self.history = []
         for _ in range(self.num_loop):
+            # print(f"Sub loop [{_}/{self.num_loop}]")
             # Apply genetic operators on current pop to generate an offspring pop
             offspring_pop = Population(self.genes_length, pop_num)
             count = 0
@@ -217,7 +218,7 @@ class MFEA:
             for individual in pop.individuals:
                 for i in range(num_task):
                     bests[i] = min(bests[i], individual.factorial_cost[i])
-            self.history.append([bests])
+            self.history.append(bests)
 
 
 def dist(x1, y1, x2, y2):
@@ -225,7 +226,7 @@ def dist(x1, y1, x2, y2):
 
 
 class Task:
-    def cost_func(self, genes):
+    def cost_func(self, individual):
         return 0
 
 
@@ -235,14 +236,33 @@ class FindingTruckDroneRoute(Task):
         self.start_point = start_point
         self.end_point = end_point
 
-    # TODO: define cost_func
-    def cost_func(self, genes):
-        # Decode genes
+    def decode(self, genes):
+        points = self.points.copy()
+        start_point = self.start_point
+        end_point = self.end_point
+        points.remove(start_point)
+        if start_point != end_point:
+            points.remove(end_point)
 
-        # Find optimal route for drone
+        # Decode genes
+        route = [start_point] + [points[i] for i in genes if i < len(points)] + [end_point]
+        return route
+
+    def cost_func(self, individual):
+        route = self.decode(individual.genes)
+        # TODO: Find optimal route for drone
 
         # Sum cost
-        return 0
+        sum_cost = 0
+        for i in range(len(route) - 1):
+            a = route[i]
+            b = route[i + 1]
+            sum_cost += dist(a.x, a.y, b.x, b.y)
+        return sum_cost
+
+
+def display_route(route):
+    pass
 
 
 # Minimize cost of truck-drone route when determined cluster route cr
@@ -251,7 +271,7 @@ def best_cost(clusters, cr: List[Edge]):
     max_num_points = 0
     for cluster in clusters:
         max_num_points = max(len(cluster.points), max_num_points)
-    tspd_mfea = MFEA(num_task, genes_length=max_num_points)
+    tspd_mfea = MFEA(num_task, genes_length=max_num_points - 1)
     start_points = [None] * num_task
     end_points = [None] * num_task
 
@@ -264,7 +284,7 @@ def best_cost(clusters, cr: List[Edge]):
 
     # Note: The following lines of code run correctly if only cluster route is sorted (using dfs before)
     for edge in cr:
-        next_point = edge.p1 if last_point == edge.p2 else edge.p2
+        next_point = edge.p1 if last_point.c == edge.p2.c else edge.p2
         end_points[last_point.c] = last_point
         start_points[next_point.c] = next_point
         last_point = next_point
@@ -290,7 +310,11 @@ def best_cost(clusters, cr: List[Edge]):
     for edge in cr:
         sum_cost += dist(edge.p1.x, edge.p1.y, edge.p2.x, edge.p2.y)
 
+
     plt.plot(tspd_mfea.history)
+    plt.title("MFEA Convergence chart")
+    plt.xlabel("Iteration")
+    plt.ylabel("Best cost")
     plt.show()
 
     return sum_cost
