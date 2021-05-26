@@ -30,28 +30,28 @@
 %     - MINDIST (scalar float) is the cost of the best route
 %
 % Usage:
-%     tsp_ga
+%     tsp_ga_kmeans
 %       -or-
-%     tsp_ga(userConfig)
+%     tsp_ga_kmeans(userConfig)
 %       -or-
-%     resultStruct = tsp_ga;
+%     resultStruct = tsp_ga_kmeans;
 %       -or-
-%     resultStruct = tsp_ga(userConfig);
+%     resultStruct = tsp_ga_kmeans(userConfig);
 %       -or-
-%     [...] = tsp_ga('Param1',Value1,'Param2',Value2, ...);
+%     [...] = tsp_ga_kmeans('Param1',Value1,'Param2',Value2, ...);
 %
 % Example:
 %     % Let the function create an example problem to solve
-%     tsp_ga;
+%     tsp_ga_kmeans;
 %
 % Example:
 %     % Request the output structure from the solver
-%     resultStruct = tsp_ga;
+%     resultStruct = tsp_ga_kmeans;
 %
 % Example:
 %     % Pass a random set of user-defined XY points to the solver
 %     userConfig = struct('xy',10*rand(50,2));
-%     resultStruct = tsp_ga(userConfig);
+%     resultStruct = tsp_ga_kmeans(userConfig);
 %
 % Example:
 %     % Pass a more interesting set of XY points to the solver
@@ -62,23 +62,23 @@
 %     [x,y] = pol2cart(theta(:),rho(:));
 %     xy = 10*([x y]-min([x;y]))/(max([x;y])-min([x;y]));
 %     userConfig = struct('xy',xy);
-%     resultStruct = tsp_ga(userConfig);
+%     resultStruct = tsp_ga_kmeans(userConfig);
 %
 % Example:
 %     % Pass a random set of 3D (XYZ) points to the solver
 %     xyz = 10*rand(50,3);
 %     userConfig = struct('xy',xyz);
-%     resultStruct = tsp_ga(userConfig);
+%     resultStruct = tsp_ga_kmeans(userConfig);
 %
 % Example:
 %     % Change the defaults for GA population size and number of iterations
 %     userConfig = struct('popSize',200,'numIter',1e4);
-%     resultStruct = tsp_ga(userConfig);
+%     resultStruct = tsp_ga_kmeans(userConfig);
 %
 % Example:
 %     % Turn off the plots but show a waitbar
 %     userConfig = struct('showProg',false,'showResult',false,'showWaitbar',true);
-%     resultStruct = tsp_ga(userConfig);
+%     resultStruct = tsp_ga_kmeans(userConfig);
 %
 % See also: mtsp_ga, tsp_nn, tspo_ga, tspof_ga, tspofs_ga, distmat
 %

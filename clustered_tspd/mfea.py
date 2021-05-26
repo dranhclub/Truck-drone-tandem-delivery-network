@@ -310,11 +310,11 @@ def best_cost(clusters, cr: List[Edge]):
     for edge in cr:
         sum_cost += dist(edge.p1.x, edge.p1.y, edge.p2.x, edge.p2.y)
 
-
-    plt.plot(tspd_mfea.history)
-    plt.title("MFEA Convergence chart")
-    plt.xlabel("Iteration")
-    plt.ylabel("Best cost")
-    plt.show()
+    # Show chart
+    # plt.plot(tspd_mfea.history)
+    # plt.title("MFEA Convergence chart")
+    # plt.xlabel("Iteration")
+    # plt.ylabel("Best cost")
+    # plt.show()
 
     return sum_cost

@@ -185,6 +185,7 @@ if __name__ == '__main__':
         cr_pop = new_pop
 
         history.append(best_cost(clusters, cr_pop[0]))
+
     # Show result
     for cr in cr_pop:
         print(cr)
