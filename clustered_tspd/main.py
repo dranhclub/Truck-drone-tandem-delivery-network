@@ -132,7 +132,7 @@ def crossover_cluster_route(clusters, cr1: List[Edge], cr2: List[Edge]):
 
 if __name__ == '__main__':
     # points, edges, clusters = prepare_data("mydata_9_7.txt")
-    points, edges, clusters = prepare_data(None, gen=(9, 7))
+    points, edges, clusters = prepare_data(None, gen=(9, 15))
     cr_pop_num = 10
     cr_rmp = 0.5  # Random mating probability
     main_loop_num = 20

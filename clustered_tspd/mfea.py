@@ -6,7 +6,8 @@ import matplotlib.pyplot as plt
 from scipy.stats import rankdata
 import copy
 import matplotlib.pyplot as plt
-from math import sqrt
+from math import sqrt, ceil
+from scipy.spatial.distance import cdist
 
 from clustered_tspd.edge import Edge
 
@@ -43,7 +44,12 @@ class Population:
             individual = Individual(genes, num_task=num_task)
             self.individuals[i] = individual
 
-    def get_best_individual(self, task_index):
+    def get_best_individual(self, task_index, cost_func):
+        # If task is never evaluated
+        if task_index not in [idvd.skill_factor for idvd in self.individuals]:
+            for idvd in self.individuals:
+                idvd.factorial_cost[task_index] = cost_func(idvd)
+
         best_idvd = self.individuals[0]
         for idvd in self.individuals:
             if idvd.factorial_cost[task_index] < best_idvd.factorial_cost[task_index]:
@@ -202,6 +208,7 @@ class MFEA:
                 individual.update_skill_factor()
 
             # Select the fittest individuals from intermediate-pop to form the next current pop
+            # TODO: Need a smarter selection
             fitness_table = np.empty(intermediate_pop.num_individuals)
             for (i, individual) in enumerate(intermediate_pop.individuals):
                 fitness_table[i] = individual.scalar_fitness
@@ -215,9 +222,16 @@ class MFEA:
 
             # Trace
             bests = [INF] * num_task
-            for individual in pop.individuals:
-                for i in range(num_task):
-                    bests[i] = min(bests[i], individual.factorial_cost[i])
+            # for individual in pop.individuals:
+            #     for i in range(num_task):
+            #         bests[i] = min(bests[i], individual.factorial_cost[i])
+            # if INF in bests:
+            #     print("Best:", bests)
+            #     raise Exception("Some task is not evaluated")
+
+            for task_index in range(num_task):
+                best_idvd = self.pop.get_best_individual(task_index, self.cost_functions[task_index])
+                bests[task_index] = best_idvd.factorial_cost[task_index]
             self.history.append(bests)
 
 
@@ -244,26 +258,68 @@ class FindingTruckDroneRoute(Task):
         if start_point != end_point:
             points.remove(end_point)
 
-        # Decode genes
         route = [start_point] + [points[i] for i in genes if i < len(points)] + [end_point]
         return route
 
+    # Split route into truck + drone route
+    def split_algorithm(self, route):
+        truck_speed = drone_speed = 1
+        X = np.array([[p.x, p.y] for p in route])
+        truck_cost = cdist(X, X) / truck_speed
+        drone_cost = truck_cost / drone_speed
+
+        M = np.empty(len(route), dtype=np.float32)
+        M.fill(-1)
+        prev = np.empty(len(route), dtype=np.int8)
+        prev.fill(-1)
+
+        M[0] = 0
+        M[1] = truck_cost[0][1]
+        prev[0] = -1
+        prev[1] = 0
+
+        def min_cost(i):
+            if i < 2:
+                return M[i]
+            if M[i] == -1:
+                c1 = min_cost(i - 1) + truck_cost[i - 1][i]
+                c2 = min_cost(i - 2) + max(truck_cost[i - 2][i], drone_cost[i - 2][i - 1] + drone_cost[i - 1][i])
+                if c1 <= c2:
+                    M[i] = c1
+                    prev[i] = i - 1
+                else:
+                    M[i] = c2
+                    prev[i] = i - 2
+            return M[i]
+
+        bestcost = min_cost(len(route) - 1)
+
+        truck_route = []
+        i = len(route) - 1
+        while i >= 0:
+            truck_route.insert(0, route[i])
+            i = prev[i]
+
+        drone_route = []
+        for i in range(1, len(route) - 1):
+            if route[i] not in truck_route:
+                drone_route.append([route[i - 1], route[i], route[i + 1]])
+
+        return bestcost, truck_route, drone_route
+
     def cost_func(self, individual):
         route = self.decode(individual.genes)
-        # TODO: Find optimal route for drone
+        # use drone
+        cost, truck_route, drone_route = self.split_algorithm(route)
+        return cost
 
-        # Sum cost
-        sum_cost = 0
-        for i in range(len(route) - 1):
-            a = route[i]
-            b = route[i + 1]
-            sum_cost += dist(a.x, a.y, b.x, b.y)
-        return sum_cost
-
-
-def display_route(route):
-    pass
-
+        # not use drone
+        # sum_cost = 0
+        # for i in range(len(route) - 1):
+        #     a = route[i]
+        #     b = route[i + 1]
+        #     sum_cost += dist(a.x, a.y, b.x, b.y)
+        # return sum_cost
 
 # Minimize cost of truck-drone route when determined cluster route cr
 def best_cost(clusters, cr: List[Edge]):
@@ -295,8 +351,8 @@ def best_cost(clusters, cr: List[Edge]):
         task = FindingTruckDroneRoute(clusters[i].points, start_points[i], end_points[i])
         tasks.append(task)
         tspd_mfea.set_cost_function(i, task.cost_func)
-    tspd_mfea.pop_num = 20
-    tspd_mfea.num_loop = 20
+    tspd_mfea.pop_num = 50
+    tspd_mfea.num_loop = 10
     tspd_mfea.rmp = 0.5  # Random mating probability
 
     # Run
@@ -305,16 +361,34 @@ def best_cost(clusters, cr: List[Edge]):
     # Add all costs
     sum_cost = 0
     for task_index, task in enumerate(tasks):
-        best_individual = tspd_mfea.pop.get_best_individual(task_index)
+        best_individual = tspd_mfea.pop.get_best_individual(task_index, tasks[task_index].cost_func)
         sum_cost += best_individual.factorial_cost[task_index]
     for edge in cr:
         sum_cost += dist(edge.p1.x, edge.p1.y, edge.p2.x, edge.p2.y)
 
-    # Show chart
+    # Show convergence chart
     # plt.plot(tspd_mfea.history)
     # plt.title("MFEA Convergence chart")
     # plt.xlabel("Iteration")
     # plt.ylabel("Best cost")
+    # plt.show()
+
+    # Draw route
+    # plt_size = int(ceil(sqrt(num_task)))
+    # fig, axs = plt.subplots(plt_size, plt_size)
+    # fig.suptitle('Routes')
+    # for task_index, task in enumerate(tasks):
+    #     best_individual = tspd_mfea.pop.get_best_individual(task_index, tasks[task_index].cost_func)
+    #     route = task.decode(best_individual.genes)
+    #     row = task_index // plt_size
+    #     col = task_index % plt_size
+    #     ax = axs[row, col]
+    #     x = [point.x for point in route]
+    #     y = [point.y for point in route]
+    #     ax.plot(x, y)
+    #     ax.scatter(x[0], y[0], color='gold')
+    #     ax.scatter(x[1:-1], y[1:-1])
+    #     ax.scatter(x[-1], y[-1], color='red')
     # plt.show()
 
     return sum_cost
