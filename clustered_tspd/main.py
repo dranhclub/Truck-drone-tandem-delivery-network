@@ -9,7 +9,8 @@ import random
 from point import Point
 from edge import Edge
 from cluster import Cluster
-from mfea import best_cost
+from mfea_pkg.runner import best_cost
+
 
 def prepare_data(filename, gen=None):
     if gen:
@@ -130,13 +131,18 @@ def crossover_cluster_route(clusters, cr1: List[Edge], cr2: List[Edge]):
     return generate_cluster_route_using_dfs(temp_clusters, 1)[0], generate_cluster_route_using_dfs(temp_clusters, 1)[0]
 
 
+class GA_Idvd:
+    def __init__(self, genes):
+        self.genes = genes
+        self.cost = None
+
+
 if __name__ == '__main__':
     # points, edges, clusters = prepare_data("mydata_9_7.txt")
     points, edges, clusters = prepare_data(None, gen=(9, 15))
-    cr_pop_num = 10
+    cr_pop_num = 20
     cr_rmp = 0.5  # Random mating probability
     main_loop_num = 20
-    sub_loop_num = 20
 
     # Init cluster route population
     print("Init cluster route population")
@@ -144,7 +150,7 @@ if __name__ == '__main__':
     for i in range(cr_pop_num):
         route = generate_cluster_route_using_dfs(clusters, 1)[0]
         print(f"Random generate [{i}/{cr_pop_num}] route with length {len(clusters)}: {route}")
-        cr_pop.append(route)
+        cr_pop.append(GA_Idvd(route))
         # display_route(points, edges, route)
 
     # Main loop
@@ -157,25 +163,29 @@ if __name__ == '__main__':
         count = 0
         while count < cr_pop_num:
             r_idx1, r_idx2 = np.random.choice(cr_pop_num, 2, replace=False)
-            cr_parent_1 = cr_pop[r_idx1]
-            cr_parent_2 = cr_pop[r_idx2]
+            cr_parent_1 = cr_pop[r_idx1].genes
+            cr_parent_2 = cr_pop[r_idx2].genes
             rand = np.random.rand()
             if rand < cr_rmp:
                 child_1, child_2 = crossover_cluster_route(clusters, cr_parent_1, cr_parent_2)
             else:
                 child_1 = mutate_cluster_route(edges, cr_parent_1)
                 child_2 = mutate_cluster_route(edges, cr_parent_2)
-            cr_offspr_pop.append(child_1)
-            cr_offspr_pop.append(child_2)
+            cr_offspr_pop.append(GA_Idvd(child_1))
+            cr_offspr_pop.append(GA_Idvd(child_2))
             count += 2
+
+        # Evaluate every individual in off_spring pop
+        for idvd in cr_offspr_pop:
+            idvd.cost = best_cost(clusters, idvd.genes)
 
         # Merge into a intermediate pop
         cr_intermediate_pop = cr_pop + cr_offspr_pop
 
         # Evaluate every cluster route in cr_intermediate_pop (1)
         cr_cost_table = np.empty(len(cr_intermediate_pop))
-        for i, cr in enumerate(cr_intermediate_pop):
-            cr_cost_table[i] = best_cost(clusters, cr)
+        for i, idvd in enumerate(cr_intermediate_pop):
+            cr_cost_table[i] = idvd.cost
 
         # cr_pop = top best cluster route in cr_intermediate_pop
         rank = np.argsort(cr_cost_table)
@@ -184,20 +194,17 @@ if __name__ == '__main__':
             new_pop.append(cr_intermediate_pop[i])
         cr_pop = new_pop
 
-        history.append(best_cost(clusters, cr_pop[0]))
+        history.append(cr_pop[0].cost)
 
     # Show result
-    for cr in cr_pop:
-        print(cr)
-        print(best_cost(clusters, cr))
-    display_route(points, edges, cr_pop[0])
+    print("Best cost:", cr_pop[0].cost)
+    print("Best cluster route:", cr_pop[0].genes)
+    display_route(points, edges, cr_pop[0].genes)
     plt.plot(history)
     plt.title("Convergence chart")
     plt.xlabel("Iteration")
     plt.ylabel("Best cost")
     plt.show()
-    print(cr_pop[0])
-    print(mutate_cluster_route(edges, cr_pop[0]))
 
 '''
 Main thread:
