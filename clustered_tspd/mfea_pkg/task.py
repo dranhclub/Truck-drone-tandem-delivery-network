@@ -34,7 +34,8 @@ class FindingTruckDroneRoute(Task):
 
     # Split route into truck + drone route
     def split_algorithm(self, route):
-        truck_speed = drone_speed = 1
+        truck_speed = 1
+        drone_speed = 1
         X = np.array([[p.x, p.y] for p in route])
         truck_cost = cdist(X, X) / truck_speed
         drone_cost = truck_cost / drone_speed
@@ -81,15 +82,14 @@ class FindingTruckDroneRoute(Task):
     def cost_func(self, individual):
         route = self.decode(individual.genes)
         # use drone
-        # cost, truck_route, drone_route = self.split_algorithm(route)
-        # return cost
+        cost, truck_route, drone_route = self.split_algorithm(route)
 
         # not use drone
-        cost = 0
-        for i in range(len(route) - 1):
-            a = route[i]
-            b = route[i + 1]
-            cost += sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
+        # cost = 0
+        # for i in range(len(route) - 1):
+        #     a = route[i]
+        #     b = route[i + 1]
+        #     cost += sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
 
         # Update best cost
         if cost < self.best_cost:

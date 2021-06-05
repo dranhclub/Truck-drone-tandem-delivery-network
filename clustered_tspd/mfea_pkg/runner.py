@@ -9,9 +9,8 @@ from .const import INF
 import numpy as np
 
 
-def visualize_result(tspd_mfea, tasks):
+def show_convergence_chart(tspd_mfea, tasks):
     num_task = len(tasks)
-    # Show convergence chart
     history = np.array(tspd_mfea.history)
     for j in range(num_task):
         mark = False
@@ -29,22 +28,35 @@ def visualize_result(tspd_mfea, tasks):
     plt.ylabel("Best cost")
     plt.show()
 
-    # Draw route
+
+def show_truck_drone_route(tasks):
+    num_task = len(tasks)
     plt_size = int(ceil(sqrt(num_task)))
     fig, axs = plt.subplots(plt_size, plt_size)
     fig.suptitle('Routes')
     for task_index, task in enumerate(tasks):
-        best_individual = tspd_mfea.pop.get_best_individual(task_index, tasks[task_index].cost_func)
-        route = task.decode(best_individual.genes)
+        best_idvd = task.best_individual
+        route = task.decode(best_idvd.genes)
+        bestcost, truck_route, drone_route = task.split_algorithm(route)
+
         row = task_index // plt_size
         col = task_index % plt_size
-        ax = axs[row, col]
-        x = [point.x for point in route]
-        y = [point.y for point in route]
-        ax.plot(x, y)
-        ax.scatter(x[0], y[0], color='gold')
-        ax.scatter(x[1:-1], y[1:-1])
-        ax.scatter(x[-1], y[-1], color='red')
+
+        # Drone route
+        ax = axs[row, col] if plt_size > 1 else axs
+        for a, b, c in drone_route:
+            ax.plot([a.x, b.x], [a.y, b.y], color='green')
+            ax.plot([b.x, c.x], [b.y, c.y], color='green')
+            ax.scatter(a.x, a.y, color='blue')
+            ax.scatter(b.x, b.y, color='green')
+            ax.scatter(c.x, c.y, color='blue')
+
+        # Truck route
+        x = [point.x for point in truck_route]
+        y = [point.y for point in truck_route]
+        ax.plot(x, y, color='blue')
+        ax.scatter(x[0], y[0], color='red')
+        ax.scatter(x[1:-1], y[1:-1], color='blue')
     plt.show()
 
 
@@ -80,8 +92,8 @@ def best_cost(clusters, cr: List[Edge]):
         tspd_mfea.set_cost_function(i, task.cost_func)
 
     # Set parameters
-    tspd_mfea.pop_num = 3 * num_task
-    tspd_mfea.num_loop = 20
+    tspd_mfea.pop_num = 30 * num_task
+    tspd_mfea.num_loop = 100
     tspd_mfea.rmp = 0.5  # Random mating probability
 
     # Run
@@ -97,5 +109,8 @@ def best_cost(clusters, cr: List[Edge]):
 
         sum_cost += dist(edge.p1.x, edge.p1.y, edge.p2.x, edge.p2.y)
 
-    # visualize_result(tspd_mfea, tasks)
+    show_convergence_chart(tspd_mfea, tasks)
+
+    for i in range(num_task):
+        show_truck_drone_route([tasks[i]])
     return sum_cost

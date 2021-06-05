@@ -182,12 +182,10 @@ if __name__ == '__main__':
         # Merge into a intermediate pop
         cr_intermediate_pop = cr_pop + cr_offspr_pop
 
-        # Evaluate every cluster route in cr_intermediate_pop (1)
+        # cr_pop = top best cluster route in cr_intermediate_pop
         cr_cost_table = np.empty(len(cr_intermediate_pop))
         for i, idvd in enumerate(cr_intermediate_pop):
             cr_cost_table[i] = idvd.cost
-
-        # cr_pop = top best cluster route in cr_intermediate_pop
         rank = np.argsort(cr_cost_table)
         new_pop = []
         for i in rank[:cr_pop_num]:
@@ -205,18 +203,3 @@ if __name__ == '__main__':
     plt.xlabel("Iteration")
     plt.ylabel("Best cost")
     plt.show()
-
-'''
-Main thread:
-    init cr_pop (cluster route pop)
-    while stop condition is not satisfied:
-        apply GA operator on cr_pop to get cr_offspr_pop
-        cr_intermediate_pop = cr_pop + cr_offpsr_pop
-        evaluate every cluster route in cr_intermediate_pop (1)
-        cr_pop = top best cluster route in cr_intermediate_pop
-
-(1) Evaluate cluster route:
-    Each cluster => one task of TSP-D
-    Merge into one big task and solve it by using MFEA, then get a optimal route
-    Sum all cost to evaluate
-'''
