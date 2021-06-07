@@ -1,6 +1,7 @@
 import numpy as np
 from .const import INF
 
+
 class Individual:
     def __init__(self, genes, num_task):
         self.genes = genes

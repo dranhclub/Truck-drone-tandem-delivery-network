@@ -3,13 +3,10 @@ from typing import List
 from data import readfile, generate
 import numpy as np
 import matplotlib.pyplot as plt
-import copy
-from math import sqrt
-import random
 from point import Point
 from edge import Edge
 from cluster import Cluster
-from mfea_pkg.runner import best_cost
+from tspd_mfea_pkg import best_cost
 
 
 def prepare_data(filename, gen=None):

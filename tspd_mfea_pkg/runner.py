@@ -1,11 +1,12 @@
 from typing import List
 
 from clustered_tspd.edge import Edge
-from .mfea import MFEA
+from mfea_pkg.mfea import MFEA
 import matplotlib.pyplot as plt
 from math import sqrt, ceil
-from .task import FindingTruckDroneRoute
-from .const import INF
+from mfea_pkg.task import FindingTruckDroneRoute
+from mfea_pkg.const import INF
+from .tspd_mfea import TSPD_MFEA
 import numpy as np
 
 
@@ -66,7 +67,7 @@ def best_cost(clusters, cr: List[Edge]):
     max_num_points = 0
     for cluster in clusters:
         max_num_points = max(len(cluster.points), max_num_points)
-    tspd_mfea = MFEA(num_task, genes_length=max_num_points - 1)
+    tspd_mfea = TSPD_MFEA(num_task, genes_length=max_num_points)
     start_points = [None] * num_task
     end_points = [None] * num_task
 
