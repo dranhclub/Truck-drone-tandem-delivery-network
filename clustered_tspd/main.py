@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 from point import Point
 from edge import Edge
 from cluster import Cluster
-from tspd_mfea_pkg import best_cost
+from tspd_mfea_pkg.runner import best_cost
 
 
 def prepare_data(filename, gen=None):
