@@ -25,18 +25,15 @@ class FindingTruckDroneRoute(Task):
         self.points_in_order = [start_point] + points + [end_point]
 
     def decode(self, genes):
-        red = "R"
-        green = "G"
-        black = " "
-        order, color = genes
+        gen_order, gen_color = genes
         N = len(self.points_in_order)
-        order = [0] + [i for i in order if 0 < i < N - 1] + [N - 1]
-        color = fix_color([color[i] for i in range(N)])
+        order = [0] + [i for i in gen_order if 0 < i < N - 1] + [N - 1]
+        color = fix_color([gen_color[i] for i in range(N)])
 
         # Get truck route
         truck_route = []
         for i in range(N):
-            if color[i] != green:
+            if color[i] != "G":
                 truck_route.append(self.points_in_order[order[i]])
 
         # Get drone route
@@ -47,25 +44,16 @@ class FindingTruckDroneRoute(Task):
         delivery_point = -1
 
         for i in range(N):
-            if color[i] == red:
-                if last_color == red:
-                    launch_point = i
-                elif last_color == green:
-                    a = self.points_in_order[launch_point]
-                    b = self.points_in_order[delivery_point]
-                    c = self.points_in_order[i]
+            if color[i] == "R":
+                if last_color == "G":
+                    a = self.points_in_order[order[launch_point]]
+                    b = self.points_in_order[order[delivery_point]]
+                    c = self.points_in_order[order[i]]
                     drone_route.append([a, b, c])
-                    launch_point = i
-                else:
-                    launch_point = i
-                last_color = red
-            elif color[i] == green:
+                launch_point = i
+            elif color[i] == "G":
                 delivery_point = i
-                last_color = green
-            elif color[i] == black:
-                continue
-            else:
-                raise Exception("Unexpected color")
+            last_color = color[i]
         return truck_route, drone_route
 
     def cost_func(self, individual):
@@ -87,9 +75,9 @@ class FindingTruckDroneRoute(Task):
         j = 0
         i = 0
         while i < len(truck_route) - 1:
-            if drone_route[j][0] == truck_route[i]:
+            if j < len(drone_route) and drone_route[j][0] == truck_route[i]:
                 cost += segment_cost[j]
-                i = drone_route[j][2]
+                i = truck_route.index(drone_route[j][2])
                 j += 1
             else:
                 cost += dist(truck_route[i], truck_route[i + 1]) / truck_speed

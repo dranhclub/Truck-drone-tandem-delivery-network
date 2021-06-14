@@ -7,11 +7,12 @@ from mfea_pkg.evolution_operators import partially_mapped_crossover
 class TSPD_MFEA(MFEA):
     def mutate(self, individual) -> TSPD_Individual:
         order, color = individual.genes
-        if np.random.rand() < 0.5:  # Mutate on order
+        if np.random.rand() < 0.2:  # Mutate on order
             new_order = mutate_order(order)
             return TSPD_Individual((new_order, color), self.num_task)
         else:  # Mutate on color
-            mutate_funcs = [add_green, move_green, add_red, move_red, add_green_and_red, remove_green_and_red]
+            mutate_funcs = [add_green, move_green, remove_green, add_red, move_red, remove_red, add_green_and_red,
+                            remove_green_and_red]
             for f in np.random.permutation(mutate_funcs):
                 new_color = f(color)
                 if new_color:
@@ -118,56 +119,54 @@ def fix_color(arr):
 
 
 def mutate_order(order):
-    r = np.random.randint(1, 3)
+    r = np.random.randint(3)
     (a, b) = sorted(np.random.choice(len(order), 2, replace=False))
     order = order.copy()
-    if r == 1:  # Swap 2 point
+    if r == 0:  # Swap 2 point
         order[[a, b]] = order[[b, a]]
-    elif r == 2:  # Flip a segment
+    elif r == 1:  # Flip a segment
         temp = order[a:b + 1]
         order[a:b + 1] = temp[::-1]
-    elif r == 3:  # Slide
+    elif r == 2:  # Slide
         ida = [m for m in range(a + 1, b + 1)] + [a]
         order[a:b + 1] = order[ida]
     return order
 
 
 def move_green(color):
-    color = color.copy()
-    green_idx = [i for i in range(len(color)) if color[i] == "G"]
-    green_id = np.random.choice(green_idx)
-    if color[green_id - 1] == " ":  # Move to left
-        color[green_id - 1] = "G"
-        color[green_id] = " "
-        return color
-    elif color[green_id + 1] != " ":
+    candidates = []
+    for i in range(0, len(color) - 1):
+        if (color[i], color[i + 1]) == ("G", " "):
+            new_color = color.copy()
+            new_color[i], new_color[i + 1] = (" ", "G")
+            candidates.append(new_color)
+        elif (color[i], color[i + 1]) == (" ", "G"):
+            new_color = color.copy()
+            new_color[i], new_color[i + 1] = ("G", " ")
+            candidates.append(new_color)
+    if len(candidates):
+        i = np.random.randint(len(candidates))
+        return candidates[i]
+    else:
         return False
-    right_color_id = -1
-    for i in range(green_id, len(color)):
-        if color[i] != " ":
-            right_color_id = i
-    color[green_id] = " "
-    color[right_color_id - 1] = "G"
-    return color
 
 
 def move_red(color):
-    color = color.copy()
-    red_idx = [i for i in range(len(color)) if color[i] == "R"]
-    red_id = np.random.choice(red_idx)
-    if color[red_id - 1] == " ":  # Move to left
-        color[red_id - 1] = "R"
-        color[red_id] = " "
-        return color
-    elif color[red_id + 1] != " ":
+    candidates = []
+    for i in range(0, len(color) - 1):
+        if (color[i], color[i + 1]) == ("R", " "):
+            new_color = color.copy()
+            new_color[i], new_color[i + 1] = (" ", "R")
+            candidates.append(new_color)
+        elif (color[i], color[i + 1]) == (" ", "R"):
+            new_color = color.copy()
+            new_color[i], new_color[i + 1] = ("R", " ")
+            candidates.append(new_color)
+    if len(candidates):
+        i = np.random.randint(len(candidates))
+        return candidates[i]
+    else:
         return False
-    right_color_id = -1
-    for i in range(red_id, len(color)):
-        if color[i] != " ":
-            right_color_id = i
-    color[red_id] = " "
-    color[right_color_id - 1] = "R"
-    return color
 
 
 def add_green(color):
@@ -176,7 +175,7 @@ def add_green(color):
     last = None
     for i in range(len(color)):
         if color[i] != " ":
-            if last is not None and color[last] == "R" and color[i] == "R":
+            if last is not None and i - last > 1 and color[last] == "R" and color[i] == "R":
                 flag.append((last, i))
             last = i
     if len(flag):
@@ -216,29 +215,30 @@ def add_green_and_red(color):
     last = None
     for i in range(len(color)):
         if color[i] != " ":
+            # Add to head
             if last is None:
                 if i > 1:
-                    a, b = sorted(np.random.choice(range(0, i), 2))
+                    a, b = sorted(np.random.choice(range(0, i), 2, replace=False))
                     new_color = color.copy()
                     new_color[a] = "R"
                     new_color[b] = "G"
                     candidates.append(new_color)
             else:
-                if i - last > 3:
+                if i - last > 2:
                     if color[last] == "R" and color[i] == "G":
-                        a, b = sorted(np.random.choice(range(last + 1, i), 2))
+                        a, b = sorted(np.random.choice(range(last + 1, i), 2, replace=False))
                         new_color = color.copy()
                         new_color[a] = "G"
                         new_color[b] = "R"
                         candidates.append(new_color)
                     elif color[last] == "G" and color[i] == "R":
-                        a, b = sorted(np.random.choice(range(last + 1, i), 2))
+                        a, b = sorted(np.random.choice(range(last + 1, i), 2, replace=False))
                         new_color = color.copy()
                         new_color[a] = "R"
                         new_color[b] = "G"
                         candidates.append(new_color)
-                if i - last > 4 and color[last] == color[i] == "R":
-                    a, b, c = sorted(np.random.choice(range(last + 1, i), 3))
+                if i - last > 3 and color[last] == color[i] == "R":
+                    a, b, c = sorted(np.random.choice(range(last + 1, i), 3, replace=False))
                     new_color = color.copy()
                     new_color[a] = "G"
                     new_color[b] = "R"
@@ -246,64 +246,48 @@ def add_green_and_red(color):
                     candidates.append(new_color)
 
             last = i
-    if last < len(color) - 2 and color[last] == "R":
-        a, b = sorted(np.random.choice(range(last + 1, len(color)), 2))
+
+    # Add to trail
+    if last != None and last < len(color) - 2 and color[last] == "R":
+        a, b = sorted(np.random.choice(range(last + 1, len(color)), 2, replace=False))
         new_color = color.copy()
         new_color[a] = "G"
         new_color[b] = "R"
         candidates.append(new_color)
 
     if len(candidates):
-        return np.random.choice(candidates, 1)
+        id = np.random.randint(len(candidates))
+        return candidates[id]
     else:
         return False
 
 
 def remove_green(color):
-    color = color.copy()
     flag = []
-    c1 = c2 = c3 = c4 = c5 = None
-    i1 = i2 = i3 = i4 = i5 = None
-
-    def push_color(c1, c2, c3, c4, c5, c6, i1, i2, i3, i4, i5, i6):
-        c1 = c2
-        c2 = c3
-        c3 = c4
-        c4 = c5
-        c5 = c6
-        i1 = i2
-        i2 = i3
-        i3 = i4
-        i4 = i5
-        i5 = i6
-
-    for i in range(len(color)):
-        if color[i] != " ":
-            push_color(c1, c2, c3, c4, c5, color[i], i1, i2, i3, i4, i5, i)
-            if (c1, c2, c3, c4, c5) == ("G", "R", "G", "R", "G"):
-                flag.append(i3)
-
+    cc = [c for c in color if c != " "]
+    ci = [i for i in range(len(color)) if color[i] != " "]
+    for i in range(0, len(cc) - 4):
+        if (cc[i], cc[i + 1], cc[i + 2], cc[i + 3], cc[i + 4]) == ("G", "R", "G", "R", "G"):
+            flag.append(ci[i + 2])
     if len(flag):
-        i = np.random.choice(flag)
-        color[i] = " "
+        color = color.copy()
+        color[np.random.choice(flag)] = " "
         return color
     else:
         return False
 
 
 def remove_red(color):
-    color = color.copy()
     flag = []
-    last = None
-    for i in range(len(color)):
-        if color[last] and color[i] == "R":
-            flag += [last, i]
-        if color[i] != " ":
-            last = i
-
+    cc = [c for c in color if c != " "]
+    ci = [i for i in range(len(color)) if color[i] != " "]
+    for i in range(0, len(cc) - 1):
+        if (cc[i], cc[i + 1]) == ("R", "R"):
+            flag.append(ci[i])
+            flag.append(ci[i + 1])
     if len(flag):
-        i = np.random.choice(flag)
-        color[i] = " "
+        color = color.copy()
+        color[np.random.choice(flag)] = " "
         return color
     else:
         return False
@@ -311,7 +295,7 @@ def remove_red(color):
 
 def remove_green_and_red(color):
     if len([c for c in color if c != " "]) == 3:
-        return " " * len(color)
+        return [" "] * len(color)
     candidates = []
     c1 = c2 = c3 = None
     i1 = i2 = i3 = None
@@ -351,7 +335,9 @@ def remove_green_and_red(color):
             candidates.append(new_color)
 
     cc = [color[i] for i in range(len(color)) if color[i] != " "]
-    ci = [color[i] for i in range(len(color)) if color[i] != " "]
+    ci = [i for i in range(len(color)) if color[i] != " "]
+    if len(cc) < 4:
+        return False
     if (cc[0], cc[1], cc[2], cc[3]) == ("R", "G", "R", "G"):
         new_color = color.copy()
         new_color[ci[0]] = new_color[ci[1]] = " "
@@ -370,6 +356,8 @@ def remove_green_and_red(color):
         candidates.append(new_color)
 
     if len(candidates):
-        return np.random.choice(candidates, 1)
+        id = np.random.randint(len(candidates))
+        return candidates[id]
     else:
         return False
+

@@ -37,8 +37,7 @@ def show_truck_drone_route(tasks):
     fig.suptitle('Routes')
     for task_index, task in enumerate(tasks):
         best_idvd = task.best_individual
-        route = task.decode(best_idvd.genes)
-        bestcost, truck_route, drone_route = task.split_algorithm(route)
+        truck_route, drone_route = task.decode(best_idvd.genes)
 
         row = task_index // plt_size
         col = task_index % plt_size
@@ -58,6 +57,10 @@ def show_truck_drone_route(tasks):
         ax.plot(x, y, color='blue')
         ax.scatter(x[0], y[0], color='red')
         ax.scatter(x[1:-1], y[1:-1], color='blue')
+        ax.scatter(x[-1], y[-1], color='red')
+        offset = 0.1
+        ax.annotate("s", (x[0] + offset, y[0] + offset))
+        ax.annotate("e", (x[-1] + offset, y[-1] + offset))
     plt.show()
 
 
@@ -67,7 +70,7 @@ def best_cost(clusters, cr: List[Edge]):
     max_num_points = 0
     for cluster in clusters:
         max_num_points = max(len(cluster.points), max_num_points)
-    tspd_mfea = TSPD_MFEA(num_task, genes_length=max_num_points)
+    tspd_mfea = TSPD_MFEA(num_task, genes_length=max_num_points + 1)
     start_points = [None] * num_task
     end_points = [None] * num_task
 
@@ -95,7 +98,7 @@ def best_cost(clusters, cr: List[Edge]):
     # Set parameters
     tspd_mfea.pop_num = 30 * num_task
     tspd_mfea.num_loop = 100
-    tspd_mfea.rmp = 0.5  # Random mating probability
+    tspd_mfea.rmp = 0.1  # Random mating probability
 
     # Run
     tspd_mfea.run()
@@ -112,6 +115,8 @@ def best_cost(clusters, cr: List[Edge]):
 
     show_convergence_chart(tspd_mfea, tasks)
 
-    for i in range(num_task):
-        show_truck_drone_route([tasks[i]])
+    show_truck_drone_route(tasks)
+    # for i in range(num_task):
+    #     show_truck_drone_route([tasks[i]])
+
     return sum_cost
