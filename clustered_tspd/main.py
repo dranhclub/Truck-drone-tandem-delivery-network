@@ -136,7 +136,7 @@ class GA_Idvd:
 
 if __name__ == '__main__':
     # points, edges, clusters = prepare_data("mydata_9_7.txt")
-    points, edges, clusters = prepare_data(None, gen=(9, 15))
+    points, edges, clusters = prepare_data(None, gen=(6, 15))
     cr_pop_num = 20
     cr_rmp = 0.5  # Random mating probability
     main_loop_num = 20

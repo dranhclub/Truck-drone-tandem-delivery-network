@@ -4,7 +4,7 @@ from clustered_tspd.edge import Edge
 from mfea_pkg.mfea import MFEA
 import matplotlib.pyplot as plt
 from math import sqrt, ceil
-from mfea_pkg.task import FindingTruckDroneRoute
+from tspd_mfea_pkg.tspd_task import FindingTruckDroneRoute
 from mfea_pkg.const import INF
 from .tspd_mfea import TSPD_MFEA
 import numpy as np
@@ -97,7 +97,7 @@ def best_cost(clusters, cr: List[Edge]):
 
     # Set parameters
     tspd_mfea.pop_num = 30 * num_task
-    tspd_mfea.num_loop = 100
+    tspd_mfea.num_loop = 500
     tspd_mfea.rmp = 0.1  # Random mating probability
 
     # Run

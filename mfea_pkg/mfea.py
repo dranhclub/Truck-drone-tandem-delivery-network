@@ -48,9 +48,7 @@ class MFEA(ABC):
         for t in range(num_task):
             for (i, individual) in enumerate(pop):
                 cost_table[t][i] = individual.factorial_cost[t]
-        rank_table = np.empty_like(cost_table)
-        for t in range(num_task):
-            rank_table[t] = rankdata(cost_table[t])
+        rank_table = rankdata(cost_table, method='ordinal', axis=1)
         for i in range(len(pop)):
             pop[i].factorial_rank = rank_table[:, i]
 
@@ -67,18 +65,17 @@ class MFEA(ABC):
 
     def run(self):
         self.pop = self.generate_pop()
-        pop = self.pop
         num_task = self.num_task
         pop_num = self.pop_num
 
         # Evaluate every individual with respect every optimization task
         for t in range(num_task):
-            for individual in pop:
+            for individual in self.pop:
                 individual.factorial_cost[t] = self.cost_functions[t](individual)
 
         # Compute the skill factor of each individual
-        self.ranking(pop)
-        for individual in pop:
+        self.ranking(self.pop)
+        for individual in self.pop:
             individual.update_skill_factor()
 
         # Main loop
@@ -91,8 +88,8 @@ class MFEA(ABC):
             while count < pop_num:
                 # Assortative mating
                 i1, i2 = np.random.choice(pop_num, 2, replace=False)
-                idvd1 = pop[i1]
-                idvd2 = pop[i2]
+                idvd1 = self.pop[i1]
+                idvd2 = self.pop[i2]
                 rand = np.random.rand()
                 if idvd1.skill_factor == idvd2.skill_factor or rand < self.rmp:
                     child_1, child_2 = self.__crossover(idvd1, idvd2)
@@ -119,7 +116,7 @@ class MFEA(ABC):
                         individual.factorial_cost[j] = INF
 
             # Concatentate offspring-pop and current pop to form and intermediate-pop
-            intermediate_pop = pop + offspring_pop
+            intermediate_pop = self.pop + offspring_pop
 
             # Update the scalar fitness and skill factor of every individual.py in intermediate-pop
             self.ranking(intermediate_pop)
@@ -128,15 +125,14 @@ class MFEA(ABC):
                 individual.update_skill_factor()
 
             # Select the fittest individuals from intermediate-pop to form the next current pop
-            # TODO: Need a smarter selection
             fitness_table = np.empty(len(intermediate_pop))
             for (i, individual) in enumerate(intermediate_pop):
                 fitness_table[i] = individual.scalar_fitness
             selected_indices = np.argsort(fitness_table)[-pop_num:][::-1]
-            pop = []
+            new_pop = []
             for i in selected_indices:
-                pop.append(intermediate_pop[i])
-            self.pop = pop
+                new_pop.append(intermediate_pop[i])
+            self.pop = new_pop
 
             # Trace
             bests = [INF] * num_task

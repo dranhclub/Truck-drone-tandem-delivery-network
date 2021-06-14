@@ -10,7 +10,7 @@ class Individual:
         self.parents = []
         self.factorial_cost = [INF] * num_task
         self.factorial_rank = [INF] * num_task
-        self.scalar_fitness = INF
+        self.scalar_fitness = -1
         self.skill_factor = None
 
     def update_skill_factor(self):
