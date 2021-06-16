@@ -46,7 +46,7 @@ class FindingTruckDroneRoute(Task):
 
     def cost_func(self, individual):
         truck_route, drone_route = self.decode(individual.genes)
-        drone_speed = 1.2
+        drone_speed = 1.5
         truck_speed = 1
 
         segment_cost = []

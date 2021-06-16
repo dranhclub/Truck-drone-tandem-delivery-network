@@ -24,16 +24,6 @@ class TSPD_MFEA(MFEA):
 
     def crossover(self, individual_1, individual_2) -> (TSPD_Individual, TSPD_Individual):
         # TODO: Need more crossover operator
-        # r = np.random.randint(0, 2)
-        # if r == 0:
-        #     pass
-        # elif r == 1:
-        #     pass
-        # elif r == 2:
-        #     pass
-        # else:
-        #     pass
-
         p1 = individual_1.genes[0]
         p2 = individual_2.genes[0]
         point1, point2 = np.random.choice(len(p1), 2, replace=False)

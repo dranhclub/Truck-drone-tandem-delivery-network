@@ -9,3 +9,9 @@ class Edge:
 
     def __repr__(self):
         return f'({self.idx}:{self.p1.c}-{self.p2.c})'
+
+    def __cmp__(self, other):
+        return (self.idx > other.idx) - (self.idx < other.idx)
+
+    def __lt__(self, other):
+        return self.idx < other.idx

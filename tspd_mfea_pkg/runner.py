@@ -1,4 +1,7 @@
 from typing import List
+import cProfile
+
+# from clustered_tspd.point import memoize
 
 from clustered_tspd.edge import Edge
 from mfea_pkg.mfea import MFEA
@@ -58,14 +61,27 @@ def show_truck_drone_route(tasks):
         ax.scatter(x[0], y[0], color='red')
         ax.scatter(x[1:-1], y[1:-1], color='blue')
         ax.scatter(x[-1], y[-1], color='red')
-        offset = 0.1
+        offset = 0.01
         ax.annotate("s", (x[0] + offset, y[0] + offset))
         ax.annotate("e", (x[-1] + offset, y[-1] + offset))
     plt.show()
 
+def memoize(func):
+    cache = dict()
+
+    def memoized_func(clusters, *args):
+        if args in cache:
+            return cache[args]
+        result = func(clusters, *args)
+        cache[args] = result
+        return result
+
+    return memoized_func
 
 # Minimize cost of truck-drone route when determined cluster route cr
-def best_cost(clusters, cr: List[Edge]):
+@memoize
+def best_cost(clusters, idvd):
+    cr = idvd.genes
     num_task = len(clusters)
     max_num_points = 0
     for cluster in clusters:
@@ -96,12 +112,18 @@ def best_cost(clusters, cr: List[Edge]):
         tspd_mfea.set_cost_function(i, task.cost_func)
 
     # Set parameters
-    tspd_mfea.pop_num = 30 * num_task
+    tspd_mfea.pop_num = 100 * num_task
     tspd_mfea.num_loop = 500
     tspd_mfea.rmp = 0.1  # Random mating probability
 
+    # pr = cProfile.Profile()
+    # pr.enable()
+
     # Run
     tspd_mfea.run()
+
+    # pr.disable()
+    # pr.print_stats(sort="tottime")
 
     # Add all costs
     sum_cost = 0

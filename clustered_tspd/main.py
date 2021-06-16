@@ -3,7 +3,7 @@ from typing import List
 from data import readfile, generate
 import numpy as np
 import matplotlib.pyplot as plt
-from point import Point
+from point import Point, memoize
 from edge import Edge
 from cluster import Cluster
 from tspd_mfea_pkg.runner import best_cost
@@ -133,13 +133,19 @@ class GA_Idvd:
         self.genes = genes
         self.cost = None
 
+    def __key(self):
+        return tuple(sorted(self.genes))
+
+    def __hash__(self):
+        return hash(self.__key())
 
 if __name__ == '__main__':
     # points, edges, clusters = prepare_data("mydata_9_7.txt")
-    points, edges, clusters = prepare_data(None, gen=(6, 15))
+    points, edges, clusters = prepare_data("mydata_geo.txt")
+    # points, edges, clusters = prepare_data(None, gen=(6, 20))
     cr_pop_num = 20
-    cr_rmp = 0.5  # Random mating probability
-    main_loop_num = 20
+    cr_rmp = 0.1  # Random mating probability
+    main_loop_num = 100
 
     # Init cluster route population
     print("Init cluster route population")
@@ -174,7 +180,7 @@ if __name__ == '__main__':
 
         # Evaluate every individual in off_spring pop
         for idvd in cr_offspr_pop:
-            idvd.cost = best_cost(clusters, idvd.genes)
+            idvd.cost = best_cost(clusters, idvd)
 
         # Merge into a intermediate pop
         cr_intermediate_pop = cr_pop + cr_offspr_pop
@@ -190,6 +196,7 @@ if __name__ == '__main__':
         cr_pop = new_pop
 
         history.append(cr_pop[0].cost)
+        print("min cost=", cr_pop[0].cost)
 
     # Show result
     print("Best cost:", cr_pop[0].cost)
