@@ -1,4 +1,4 @@
-from point import Point
+from .point import Point
 class Edge:
     def __init__(self, idx, p1: Point, p2: Point):
         self.idx = idx

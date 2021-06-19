@@ -1,15 +1,22 @@
-from typing import List
+from typing import List, Tuple
 
-from data import readfile, generate
+from .data import readfile, generate
 import numpy as np
 import matplotlib.pyplot as plt
-from point import Point, memoize
-from edge import Edge
-from cluster import Cluster
+from .point import Point, memoize
+from .edge import Edge
+from .cluster import Cluster
 from tspd_mfea_pkg.runner import best_cost
+import parameters
+import os
 
 
-def prepare_data(filename, gen=None):
+def prepare_data(filename, gen: Tuple[int, int] = None):
+    """
+    Read data from file or generate data
+    If generate data:
+        gen = (approximate number of cluster, approximate number of points per cluster)
+    """
     if gen:
         (aprxmt_num_cluster, aprxmt_num_point_per_cluster) = gen
         r_points, r_edges = generate(aprxmt_num_cluster, aprxmt_num_point_per_cluster)
@@ -80,6 +87,7 @@ def generate_cluster_route_using_dfs(clusters, prefer_num_route):
 
 
 def display_route(points, edges, route: List[Edge]):
+    """Show cluster routes"""
     for p in points:
         plt.scatter(p.x, p.y, color="black")
     for edge in edges:
@@ -129,6 +137,8 @@ def crossover_cluster_route(clusters, cr1: List[Edge], cr2: List[Edge]):
 
 
 class GA_Idvd:
+    """Genetic Algorithm Individual"""
+
     def __init__(self, genes):
         self.genes = genes
         self.cost = None
@@ -139,13 +149,19 @@ class GA_Idvd:
     def __hash__(self):
         return hash(self.__key())
 
-if __name__ == '__main__':
+
+def main():
+    script_dir = os.path.split(os.path.abspath(__file__))[0]
+
+    # Prepare data
     # points, edges, clusters = prepare_data("mydata_9_7.txt")
-    points, edges, clusters = prepare_data("mydata_geo.txt")
+    points, edges, clusters = prepare_data(os.path.join(script_dir, "mydata_geo.txt"))
     # points, edges, clusters = prepare_data(None, gen=(6, 20))
-    cr_pop_num = 20
-    cr_rmp = 0.1  # Random mating probability
-    main_loop_num = 100
+
+    # Set parameters
+    cr_pop_num = parameters.GA_POP_NUM
+    cr_rmp = parameters.GA_RMP
+    main_loop_num = parameters.GA_NUM_GENERATION
 
     # Init cluster route population
     print("Init cluster route population")

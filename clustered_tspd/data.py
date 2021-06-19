@@ -31,6 +31,11 @@ def generate_points_with_min_distance(n, shape, min_dist):
 
 
 def generate(aprxmt_num_cluster, aprxmt_num_point_per_cluster):
+    """
+        aprxmt_num_cluster: approximate number of cluster,
+        aprxmt_num_point_per_cluster: approximate number of points per cluster
+    """
+
     # Generate clustered points
     width = 100
     height = 100
@@ -62,7 +67,7 @@ def generate(aprxmt_num_cluster, aprxmt_num_point_per_cluster):
             dist = (centr[0] - other[0]) ** 2 + (centr[1] - other[1]) ** 2
             dists.append(dist)
         argsorted = np.argsort(np.array(dists))
-        k = np.random.randint(2, len(others)) # k nearest neighbors
+        k = np.random.randint(2, len(others))  # k nearest neighbors
         edges_of_cluster = []
         for j in range(k):
             new_edge = [i, others[argsorted[j]]]
@@ -166,7 +171,6 @@ def show(points, cluster_edges):
     for p in points:
         plt.scatter(p[1], p[2], color='black')
     plt.show()
-
 
 # show(*readfile("mydata.txt"))
 
